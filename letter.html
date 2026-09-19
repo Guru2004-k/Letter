@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Letter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-app: #E7EEF4;
+    --sidebar-bg: #FFFFFF;
+    --header-bg: #175E9E;
+    --header-ink: #FFFFFF;
+    --accent: #1E76C7;
+    --accent-ink: #FFFFFF;
+    --accent-soft: #DDEBF9;
+    --sent-bubble: #D9EAFB;
+    --received-bubble: #FFFFFF;
+    --text: #111B21;
+    --text-muted: #667781;
+    --border: #E3E8EC;
+    --verified: #2E9A5C;
+    --danger: #C0392B;
+    --shadow: 0 1px 2px rgba(17,27,33,0.05), 0 10px 26px -14px rgba(17,27,33,0.22);
+    --radius: 12px;
+    --radius-sm: 9px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg-app: #0B141A;
+      --sidebar-bg: #111B21;
+      --header-bg: #163247;
+      --header-ink: #E9EDEF;
+      --accent: #4C9EE8;
+      --accent-ink: #06141C;
+      --accent-soft: #1D3A4F;
+      --sent-bubble: #1F4A63;
+      --received-bubble: #1B262C;
+      --text: #E9EDEF;
+      --text-muted: #8696A0;
+      --border: #263640;
+      --verified: #6FCF97;
+      --danger: #E27C6B;
+      --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 12px 30px -14px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg-app: #0B141A;
+    --sidebar-bg: #111B21;
+    --header-bg: #163247;
+    --header-ink: #E9EDEF;
+    --accent: #4C9EE8;
+    --accent-ink: #06141C;
+    --accent-soft: #1D3A4F;
+    --sent-bubble: #1F4A63;
+    --received-bubble: #1B262C;
+    --text: #E9EDEF;
+    --text-muted: #8696A0;
+    --border: #263640;
+    --verified: #6FCF97;
+    --danger: #E27C6B;
+    --shadow: 0 1px 2px rgba(0,0,0,0.35), 0 12px 30px -14px rgba(0,0,0,0.6);
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0; background: var(--bg-app); color: var(--text);
+    font-family:'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing:antialiased; overflow:hidden;
+  }
+  ::selection{ background: var(--accent-soft); }
+  button{ font-family:inherit; } input, textarea{ font-family:inherit; }
+  .mono{ font-family:'IBM Plex Mono', ui-monospace, monospace; }
+
+  #app{ height:100%; width:100%; }
+  .center-fill{ height:100%; display:flex; align-items:center; justify-content:center; }
+  .quiet-line{ color:var(--text-muted); font-size:14px; }
+  .spinner{ width:32px; height:32px; border-radius:50%; border:2.5px solid var(--border); border-top-color:var(--accent); animation: spin .85s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* ---------- auth ---------- */
+  .auth-wrap{ height:100%; width:100%; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .auth-card{
+    width:100%; max-width:760px; display:grid; grid-template-columns:1fr 1fr;
+    background: var(--sidebar-bg); border:1px solid var(--border); border-radius:18px;
+    box-shadow: var(--shadow); overflow:hidden; min-height:470px;
+  }
+  @media (max-width:700px){ .auth-card{ grid-template-columns:1fr; min-height:unset; } }
+  .auth-brand{
+    background: linear-gradient(165deg, var(--header-bg), var(--accent));
+    color: var(--header-ink); padding:42px 36px; display:flex; flex-direction:column; justify-content:space-between;
+  }
+  .wordmark{ font-size:28px; font-weight:700; letter-spacing:-0.01em; margin:0 0 10px; display:flex; align-items:center; gap:10px; }
+  .tagline{ opacity:0.92; font-size:14.5px; line-height:1.55; max-width:28ch; }
+  .brand-art{ margin:26px 0; }
+  .fine-print{ font-size:12px; opacity:0.85; line-height:1.6; }
+
+  .auth-form{ padding:42px 36px; display:flex; flex-direction:column; }
+  .form-title{ font-size:19px; font-weight:700; margin:0 0 4px; }
+  .form-sub{ color:var(--text-muted); font-size:13.5px; margin:0 0 20px; }
+  .field-label{ font-size:13px; font-weight:600; margin-bottom:7px; display:block; }
+  .field-input{
+    width:100%; padding:11px 13px; border-radius: var(--radius-sm); border:1px solid var(--border);
+    background: var(--bg-app); color:var(--text); font-size:14.5px; outline:none; transition:border-color .15s;
+  }
+  .field-input:focus{ border-color: var(--accent); }
+  .field-hint{ font-size:12px; color:var(--text-muted); margin-top:6px; }
+  .btn{ border:none; border-radius:var(--radius-sm); padding:11px 16px; font-size:14.5px; font-weight:700; cursor:pointer; transition:filter .12s, transform .05s; }
+  .btn:active{ transform:scale(0.98); }
+  .btn:disabled{ opacity:0.5; cursor:not-allowed; }
+  .btn-primary{ background: var(--accent); color: var(--accent-ink); }
+  .btn-primary:hover:not(:disabled){ filter:brightness(1.06); }
+  .btn-ghost{ background:transparent; color:var(--text); border:1px solid var(--border); }
+  .btn-ghost:hover{ background: var(--accent-soft); }
+  .btn-text{ background:none; border:none; color:var(--accent); font-size:13px; cursor:pointer; padding:0; font-weight:600; }
+  .auth-error{ background: color-mix(in srgb, var(--danger) 12%, transparent); color:var(--danger); border:1px solid color-mix(in srgb, var(--danger) 35%, transparent); padding:9px 12px; border-radius:var(--radius-sm); font-size:13px; margin-bottom:14px; }
+  .auth-notice{ background: color-mix(in srgb, var(--verified) 12%, transparent); color:var(--verified); border:1px solid color-mix(in srgb, var(--verified) 35%, transparent); padding:9px 12px; border-radius:var(--radius-sm); font-size:13px; margin-bottom:14px; }
+  .divider-row{ display:flex; align-items:center; gap:10px; margin:16px 0; color:var(--text-muted); font-size:12px; }
+  .divider-row::before, .divider-row::after{ content:''; flex:1; height:1px; background:var(--border); }
+  textarea.field-input{ resize:vertical; min-height:74px; font-size:12.5px; }
+
+  /* ---------- shell ---------- */
+  .shell{ height:100%; display:flex; }
+  .sidebar{ width:280px; min-width:280px; background: var(--sidebar-bg); border-right:1px solid var(--border); display:flex; flex-direction:column; }
+  .me-row{ background: var(--header-bg); color: var(--header-ink); padding:14px 16px; display:flex; align-items:center; gap:11px; }
+  .avatar{ width:36px; height:36px; border-radius:50%; background: var(--accent); color:var(--accent-ink); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0; }
+  .me-row .avatar{ background: rgba(255,255,255,0.18); color:var(--header-ink); }
+  .me-name{ font-weight:700; font-size:14px; line-height:1.3; }
+  .me-fp{ font-size:10.5px; opacity:0.8; }
+  .me-menu-btn{ margin-left:auto; background:none; border:none; color: var(--header-ink); opacity:0.85; cursor:pointer; font-size:18px; padding:4px 6px; border-radius:6px; }
+  .me-menu-btn:hover{ background: rgba(255,255,255,0.12); }
+
+  .new-chat-row{ padding:10px 12px; border-bottom:1px solid var(--border); }
+  .contacts{ flex:1; overflow-y:auto; padding:4px 6px; }
+  .contacts-empty{ padding:20px 14px; color:var(--text-muted); font-size:13px; line-height:1.6; }
+  .contact-item{ display:flex; align-items:center; gap:10px; padding:10px 10px; border-radius:var(--radius-sm); cursor:pointer; margin-bottom:2px; }
+  .contact-item:hover{ background: var(--accent-soft); }
+  .contact-item.active{ background: var(--accent-soft); }
+  .contact-avatar{ width:32px; height:32px; border-radius:50%; background:var(--accent); color:var(--accent-ink); display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:700; flex-shrink:0; }
+  .contact-name{ font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .chat-col{ flex:1; display:flex; flex-direction:column; min-width:0; background: var(--bg-app);
+    background-image: radial-gradient(circle at 20px 20px, rgba(30,118,199,0.05) 2px, transparent 2px);
+    background-size: 42px 42px;
+  }
+  .chat-header{ background: var(--header-bg); color: var(--header-ink); padding:12px 20px; display:flex; align-items:center; gap:12px; min-height:26px; }
+  .chat-header-name{ font-weight:700; font-size:15px; }
+  .verify-badge{ margin-left:auto; display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--header-ink); cursor:pointer; padding:6px 11px; border-radius:999px; background: rgba(255,255,255,0.14); }
+  .verify-badge:hover{ background: rgba(255,255,255,0.22); }
+
+  .messages{ flex:1; overflow-y:auto; padding:20px 22px; display:flex; flex-direction:column; gap:2px; }
+  .msg-row{ display:flex; margin-bottom:6px; }
+  .msg-row.sent{ justify-content:flex-end; }
+  .bubble{ max-width:62%; padding:9px 13px; border-radius:14px; font-size:14px; line-height:1.5; word-wrap:break-word; white-space:pre-wrap; box-shadow: 0 1px 1px rgba(0,0,0,0.05); }
+  .msg-row.received .bubble{ background: var(--received-bubble); border-bottom-left-radius:4px; }
+  .msg-row.sent .bubble{ background: var(--sent-bubble); border-bottom-right-radius:4px; }
+  .msg-time{ font-size:10px; color:var(--text-muted); margin-top:3px; padding:0 4px; }
+  .msg-row.sent .msg-time{ text-align:right; }
+
+  .composer{ padding:12px 18px 16px; border-top:1px solid var(--border); display:flex; gap:10px; align-items:flex-end; background: var(--sidebar-bg); }
+  .composer textarea{ flex:1; resize:none; border-radius:20px; padding:11px 16px; max-height:140px; border:1px solid var(--border); background: var(--bg-app); color:var(--text); font-size:14px; outline:none; line-height:1.4; }
+  .composer textarea:focus{ border-color: var(--accent); }
+  .send-btn{ width:38px; height:38px; border-radius:50%; border:none; background: var(--accent); color:var(--accent-ink); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+  .send-btn:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  .empty-chat{ flex:1; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; color:var(--text-muted); text-align:center; padding:20px; }
+  .empty-chat .big{ font-size:19px; font-weight:700; color:var(--text); }
+
+  .modal-backdrop{ position:fixed; inset:0; background: rgba(10,20,26,0.5); display:flex; align-items:center; justify-content:center; padding:20px; z-index:50; }
+  .modal{ background: var(--sidebar-bg); border:1px solid var(--border); border-radius:16px; max-width:440px; width:100%; padding:24px 24px 20px; box-shadow:var(--shadow); max-height:84vh; overflow-y:auto; }
+  .modal h3{ margin:0 0 6px; font-size:17px; font-weight:700; }
+  .modal p{ font-size:13.5px; color:var(--text-muted); line-height:1.6; margin:0 0 14px; }
+  .modal .fp-block{ background: var(--accent-soft); border-radius:var(--radius-sm); padding:12px 14px; font-size:13px; line-height:1.8; margin-bottom:14px; word-break:break-all; }
+  .modal-actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:6px; }
+
+  .toast-stack{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%); z-index:80; display:flex; flex-direction:column; gap:8px; align-items:center; }
+  .toast{ background: var(--text); color: var(--bg-app); padding:9px 16px; border-radius:999px; font-size:13px; box-shadow:var(--shadow); animation: toast-in .18s ease-out; }
+  @keyframes toast-in{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:translateY(0);} }
+  .scrollthin::-webkit-scrollbar{ width:7px; }
+  .scrollthin::-webkit-scrollbar-thumb{ background: var(--border); border-radius:10px; }
+  .device-note{ font-size:11.5px; color:var(--text-muted); text-align:center; padding:7px 10px; border-top:1px solid var(--border); background: var(--sidebar-bg); }
+</style>
+</head>
+<body>
+<div id="app"><div class="center-fill"><div class="spinner"></div></div></div>
+<div class="toast-stack" id="toastStack"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================= storage layer (no backend) =============================
+     Directory of usernames/public keys and all conversation messages live in
+     localStorage, which every tab of this same browser shares. The native
+     "storage" event fires in OTHER tabs whenever localStorage changes, so
+     opening this page in two tabs/windows lets two profiles message each
+     other live. This does NOT sync across different devices or browsers —
+     there is no server. See the chat for how to add a real backend.
+  ============================================================================ */
+  const KEY_USERS = 'nimbus_users_v1';
+  const KEY_CONVOS = 'nimbus_convos_v1';
+
+  function safeParse(raw, fallback){ try { return raw ? JSON.parse(raw) : fallback; } catch(e){ return fallback; } }
+  function readUsers(){ return safeParse(localStorage.getItem(KEY_USERS), {}); }
+  function writeUsers(obj){ try { localStorage.setItem(KEY_USERS, JSON.stringify(obj)); } catch(e){ /* ignore */ } }
+  function readConvos(){ return safeParse(localStorage.getItem(KEY_CONVOS), {}); }
+  function writeConvos(obj){ try { localStorage.setItem(KEY_CONVOS, JSON.stringify(obj)); } catch(e){ /* ignore */ } }
+
+  function getUser(username){ return readUsers()[username] || null; }
+  function setUser(username, data){ const u = readUsers(); u[username] = data; writeUsers(u); }
+  function getConversation(id){ return readConvos()[id] || null; }
+  function setConversation(id, data){ const c = readConvos(); c[id] = data; writeConvos(c); }
+
+  function storageAvailable(){
+    try { const k='__nimbus_test__'; localStorage.setItem(k,'1'); localStorage.removeItem(k); return true; }
+    catch(e){ return false; }
+  }
+
+  /* ============================= state ============================= */
+  let currentUser = null;          // { username, privateKey(jwk), publicKey(jwk) }
+  let activeConversation = null;   // other username
+  const publicKeyCache = new Map();
+  const sharedKeyCache = new Map();
+
+  const app = document.getElementById('app');
+  const toastStack = document.getElementById('toastStack');
+
+  function toast(msg){
+    const el = document.createElement('div');
+    el.className = 'toast'; el.textContent = msg;
+    toastStack.appendChild(el);
+    setTimeout(()=> el.remove(), 3200);
+  }
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  /* ============================= crypto ============================= */
+  const enc = new TextEncoder();
+  const dec = new TextDecoder();
+
+  function bufToB64(buf){
+    const bytes = new Uint8Array(buf); let bin = '';
+    for (let i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+  function b64ToBuf(b64){
+    const bin = atob(b64); const bytes = new Uint8Array(bin.length);
+    for (let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+    return bytes.buffer;
+  }
+  async function generateKeyPair(){ return crypto.subtle.generateKey({ name:'ECDH', namedCurve:'P-256' }, true, ['deriveKey']); }
+  async function exportJwk(key){ return crypto.subtle.exportKey('jwk', key); }
+  async function importPublicJwk(jwk){ return crypto.subtle.importKey('jwk', jwk, { name:'ECDH', namedCurve:'P-256' }, true, []); }
+  async function importPrivateJwk(jwk){ return crypto.subtle.importKey('jwk', jwk, { name:'ECDH', namedCurve:'P-256' }, true, ['deriveKey']); }
+  async function deriveSharedKey(privateKey, publicKey){
+    return crypto.subtle.deriveKey({ name:'ECDH', public: publicKey }, privateKey, { name:'AES-GCM', length:256 }, false, ['encrypt','decrypt']);
+  }
+  async function encryptText(sharedKey, text){
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, sharedKey, enc.encode(text));
+    return { iv: bufToB64(iv), ct: bufToB64(ct) };
+  }
+  async function decryptText(sharedKey, ivB64, ctB64){
+    const iv = new Uint8Array(b64ToBuf(ivB64));
+    const pt = await crypto.subtle.decrypt({ name:'AES-GCM', iv }, sharedKey, b64ToBuf(ctB64));
+    return dec.decode(pt);
+  }
+  async function fingerprintOf(jwk){
+    const digest = await crypto.subtle.digest('SHA-256', enc.encode(jwk.x + '.' + jwk.y));
+    const bytes = new Uint8Array(digest).slice(0,10);
+    return Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join('').toUpperCase().match(/.{1,4}/g).join(' ');
+  }
+  async function mutualFingerprint(jwkA, jwkB){
+    const parts = [jwkA.x+'.'+jwkA.y, jwkB.x+'.'+jwkB.y].sort();
+    const digest = await crypto.subtle.digest('SHA-256', enc.encode(parts.join('|')));
+    const bytes = new Uint8Array(digest).slice(0,12);
+    return Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join('').toUpperCase().match(/.{1,4}/g).join(' ');
+  }
+
+  /* ============================= per-tab identity ============================= */
+  // sessionStorage is per-tab (not shared), so each open tab/window can be a
+  // different logged-in profile while the directory + messages above are shared.
+  function loadIdentity(){ return safeParse(sessionStorage.getItem('nimbus_identity'), null); }
+  function saveIdentity(obj){ try { sessionStorage.setItem('nimbus_identity', JSON.stringify(obj)); } catch(e){} }
+  function clearIdentity(){ try { sessionStorage.removeItem('nimbus_identity'); } catch(e){} }
+  function contactsKey(){ return 'nimbus_contacts_' + (currentUser ? currentUser.username : ''); }
+  function loadContacts(){ return safeParse(sessionStorage.getItem(contactsKey()), []); }
+  function addContact(name){
+    const list = loadContacts();
+    if (!list.includes(name)){ list.unshift(name); try { sessionStorage.setItem(contactsKey(), JSON.stringify(list)); } catch(e){} }
+  }
+
+  /* ============================= key helpers ============================= */
+  function fetchPublicKey(username){
+    if (publicKeyCache.has(username)) return publicKeyCache.get(username);
+    const u = getUser(username);
+    if (!u) return null;
+    publicKeyCache.set(username, u.publicKey);
+    return u.publicKey;
+  }
+  async function getSharedKey(otherUsername){
+    if (sharedKeyCache.has(otherUsername)) return sharedKeyCache.get(otherUsername);
+    const otherPubJwk = fetchPublicKey(otherUsername);
+    if (!otherPubJwk) return null;
+    const myPriv = await importPrivateJwk(currentUser.privateKey);
+    const otherPub = await importPublicJwk(otherPubJwk);
+    const key = await deriveSharedKey(myPriv, otherPub);
+    sharedKeyCache.set(otherUsername, key);
+    return key;
+  }
+  function convId(a,b){ return [a,b].sort().join('__'); }
+
+  /* ============================= auth screen ============================= */
+  function brandArtSvg(){
+    return '<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+      '<circle cx="32" cy="32" r="30" fill="rgba(255,255,255,0.14)"/>' +
+      '<path d="M16 24c0-3 2.5-5 5.5-5h21c3 0 5.5 2 5.5 5v13c0 3-2.5 5-5.5 5H27l-7 6v-6h-3.5c-3 0-5.5-2-5.5-5V24z" fill="rgba(255,255,255,0.95)"/>' +
+      '<circle cx="41" cy="41" r="10" fill="var(--header-bg)" stroke="white" stroke-width="2"/>' +
+      '<rect x="37" y="40" width="8" height="6.5" rx="1.4" fill="white"/>' +
+      '<path d="M38.5 40v-2.3a2.5 2.5 0 0 1 5 0V40" stroke="white" stroke-width="1.6" fill="none"/>' +
+      '</svg>';
+  }
+
+  function renderAuth(){
+    app.innerHTML =
+      '<div class="auth-wrap"><div class="auth-card">' +
+        '<div class="auth-brand">' +
+          '<div>' +
+            '<div class="wordmark">Letter</div>' +
+            '<div class="tagline">Messages are sealed on your device before they ever leave it. Not even Letter can open them.</div>' +
+            '<div class="brand-art">' + brandArtSvg() + '</div>' +
+          '</div>' +
+          '<div class="fine-print">Each profile is just a username and a key pair generated in your browser. The private half of that key never leaves your device unless you export it yourself.</div>' +
+        '</div>' +
+        '<div class="auth-form" id="authForm"></div>' +
+      '</div></div>';
+    renderAuthForm('create');
+  }
+
+  function renderAuthForm(mode){
+    const el = document.getElementById('authForm');
+    if (!el) return;
+    if (mode === 'create'){
+      el.innerHTML =
+        '<div class="form-title">Choose a username</div>' +
+        '<div class="form-sub">This is how people find you. It can\'t be changed later.</div>' +
+        '<div id="authMsg"></div>' +
+        '<label class="field-label" for="usernameInput">Username</label>' +
+        '<input class="field-input" id="usernameInput" placeholder="e.g. river_thorne" maxlength="20" autocomplete="off" spellcheck="false">' +
+        '<div class="field-hint">3–20 characters: letters, numbers, underscores.</div>' +
+        '<div style="margin-top:18px;"><button class="btn btn-primary" id="createBtn" style="width:100%;">Create my profile</button></div>' +
+        '<div class="divider-row">or</div>' +
+        '<button class="btn-text" id="showImportBtn">I already have a profile</button>';
+      document.getElementById('usernameInput').addEventListener('keydown', e=>{ if (e.key==='Enter') attemptCreate(); });
+      document.getElementById('createBtn').addEventListener('click', attemptCreate);
+      document.getElementById('showImportBtn').addEventListener('click', ()=> renderAuthForm('import'));
+    } else {
+      el.innerHTML =
+        '<div class="form-title">Restore your profile</div>' +
+        '<div class="form-sub">Paste the backup key you saved when you first created this username.</div>' +
+        '<div id="authMsg"></div>' +
+        '<label class="field-label" for="backupInput">Backup key</label>' +
+        '<textarea class="field-input" id="backupInput" placeholder="Paste the backup text here"></textarea>' +
+        '<div style="margin-top:18px;"><button class="btn btn-primary" id="restoreBtn" style="width:100%;">Restore access</button></div>' +
+        '<div class="divider-row">or</div>' +
+        '<button class="btn-text" id="showCreateBtn">Create a new profile instead</button>';
+      document.getElementById('restoreBtn').addEventListener('click', attemptRestore);
+      document.getElementById('showCreateBtn').addEventListener('click', ()=> renderAuthForm('create'));
+    }
+  }
+
+  function showAuthMsg(text, kind){
+    const holder = document.getElementById('authMsg');
+    if (!holder) return;
+    holder.innerHTML = '<div class="auth-' + (kind||'error') + '">' + esc(text) + '</div>';
+  }
+
+  async function attemptCreate(){
+    const input = document.getElementById('usernameInput');
+    const btn = document.getElementById('createBtn');
+    const raw = input.value.trim().toLowerCase();
+    if (!/^[a-z0-9_]{3,20}$/.test(raw)){ showAuthMsg('Use 3–20 letters, numbers or underscores.'); return; }
+    if (getUser(raw)){ showAuthMsg('That username is taken on this browser. Try another.'); return; }
+    btn.disabled = true; btn.textContent = 'Creating…';
+    try {
+      const keyPair = await generateKeyPair();
+      const publicJwk = await exportJwk(keyPair.publicKey);
+      const privateJwk = await exportJwk(keyPair.privateKey);
+      setUser(raw, { username: raw, publicKey: publicJwk, createdAt: Date.now() });
+      currentUser = { username: raw, privateKey: privateJwk, publicKey: publicJwk };
+      saveIdentity(currentUser);
+      renderBackupPrompt();
+    } catch(e){
+      showAuthMsg('Something went wrong generating your keys. Try again.');
+      btn.disabled = false; btn.textContent = 'Create my profile';
+    }
+  }
+
+  async function attemptRestore(){
+    const input = document.getElementById('backupInput');
+    const btn = document.getElementById('restoreBtn');
+    let parsed;
+    try { parsed = JSON.parse(input.value.trim()); } catch(e){ showAuthMsg('That doesn\'t look like a valid backup key.'); return; }
+    if (!parsed || !parsed.username || !parsed.privateKey || !parsed.privateKey.x){ showAuthMsg('That doesn\'t look like a valid backup key.'); return; }
+    btn.disabled = true; btn.textContent = 'Checking…';
+    const username = String(parsed.username).toLowerCase();
+    const stored = getUser(username);
+    if (!stored){ showAuthMsg('No profile with that username exists on this browser.'); btn.disabled=false; btn.textContent='Restore access'; return; }
+    if (stored.publicKey.x !== parsed.privateKey.x || stored.publicKey.y !== parsed.privateKey.y){ showAuthMsg('That key doesn\'t match this username.'); btn.disabled=false; btn.textContent='Restore access'; return; }
+    currentUser = { username, privateKey: parsed.privateKey, publicKey: stored.publicKey };
+    saveIdentity(currentUser);
+    toast('Welcome back, @' + username);
+    renderShell();
+  }
+
+  function renderBackupPrompt(){
+    const backup = JSON.stringify({ username: currentUser.username, privateKey: currentUser.privateKey });
+    const el = document.getElementById('authForm');
+    el.innerHTML =
+      '<div class="form-title">Save your backup key</div>' +
+      '<div class="form-sub">This is the only way back into @' + esc(currentUser.username) + ' if this tab closes or your browser data is cleared.</div>' +
+      '<textarea class="field-input" readonly style="min-height:110px;">' + esc(backup) + '</textarea>' +
+      '<div class="modal-actions" style="justify-content:flex-start; margin-top:12px;"><button class="btn btn-ghost" id="copyBackupBtn">Copy to clipboard</button></div>' +
+      '<div style="margin-top:22px;"><button class="btn btn-primary" id="continueBtn" style="width:100%;">I\'ve saved it — continue</button></div>';
+    document.getElementById('copyBackupBtn').addEventListener('click', async ()=>{
+      try { await navigator.clipboard.writeText(backup); toast('Backup key copied.'); }
+      catch(e){ toast('Could not copy automatically — select the text instead.'); }
+    });
+    document.getElementById('continueBtn').addEventListener('click', renderShell);
+  }
+
+  /* ============================= app shell ============================= */
+  function initials(name){ return (name||'?').slice(0,2).toUpperCase(); }
+
+  function renderShell(){
+    app.innerHTML =
+      '<div class="shell">' +
+        '<div class="sidebar">' +
+          '<div class="me-row">' +
+            '<div class="avatar">' + esc(initials(currentUser.username)) + '</div>' +
+            '<div style="min-width:0;"><div class="me-name">@' + esc(currentUser.username) + '</div><div class="me-fp mono" id="meFp">…</div></div>' +
+            '<button class="me-menu-btn" id="meMenuBtn" title="Account">⋯</button>' +
+          '</div>' +
+          '<div class="new-chat-row"><input class="field-input" id="newChatInput" placeholder="Message a username…" autocomplete="off" spellcheck="false"></div>' +
+          '<div class="contacts scrollthin" id="contactsList"></div>' +
+          '<div class="device-note">Open this page in another tab to try messaging a second profile.</div>' +
+        '</div>' +
+        '<div class="chat-col" id="chatCol"></div>' +
+      '</div>';
+
+    fingerprintOf(currentUser.publicKey).then(fp=>{ const el=document.getElementById('meFp'); if (el) el.textContent = fp; });
+    document.getElementById('meMenuBtn').addEventListener('click', openAccountModal);
+    const newChatInput = document.getElementById('newChatInput');
+    newChatInput.addEventListener('keydown', e=>{
+      if (e.key === 'Enter' && newChatInput.value.trim()){ openConversation(newChatInput.value.trim()); newChatInput.value=''; }
+    });
+    renderContacts();
+    renderEmptyChat();
+  }
+
+  function renderContacts(){
+    const holder = document.getElementById('contactsList');
+    if (!holder) return;
+    const contacts = loadContacts();
+    if (!contacts.length){ holder.innerHTML = '<div class="contacts-empty">No conversations yet. Type a username above to start one.</div>'; return; }
+    holder.innerHTML = contacts.map(name =>
+      '<div class="contact-item' + (name===activeConversation?' active':'') + '" data-name="' + esc(name) + '">' +
+        '<div class="contact-avatar">' + esc(initials(name)) + '</div>' +
+        '<div class="contact-name">@' + esc(name) + '</div>' +
+      '</div>'
+    ).join('');
+    holder.querySelectorAll('.contact-item').forEach(node=>{
+      node.addEventListener('click', ()=> openConversation(node.getAttribute('data-name')));
+    });
+  }
+
+  function renderEmptyChat(){
+    const col = document.getElementById('chatCol');
+    if (!col) return;
+    col.innerHTML = '<div class="empty-chat"><div class="big">No conversation open</div><div style="max-width:32ch;">Start one by typing a username on the left, or pick someone from your list.</div></div>';
+  }
+
+  /* ============================= conversation ============================= */
+  async function openConversation(rawName){
+    const otherUsername = rawName.trim().toLowerCase().replace(/^@/, '');
+    if (!otherUsername) return;
+    if (otherUsername === currentUser.username){ toast('That\'s your own username.'); return; }
+    if (!/^[a-z0-9_]{3,20}$/.test(otherUsername)){ toast('That doesn\'t look like a valid username.'); return; }
+    const pub = fetchPublicKey(otherUsername);
+    if (!pub){ toast('No profile with that username exists on this browser yet.'); return; }
+    addContact(otherUsername);
+    activeConversation = otherUsername;
+    renderContacts();
+    await renderChatColumn(otherUsername);
+  }
+
+  async function renderChatColumn(otherUsername){
+    const col = document.getElementById('chatCol');
+    const otherPub = fetchPublicKey(otherUsername);
+    const mutualFp = await mutualFingerprint(currentUser.publicKey, otherPub);
+    col.innerHTML =
+      '<div class="chat-header">' +
+        '<div class="contact-avatar" style="width:32px;height:32px;">' + esc(initials(otherUsername)) + '</div>' +
+        '<div><div class="chat-header-name">@' + esc(otherUsername) + '</div></div>' +
+        '<div class="verify-badge" id="verifyBadge" title="Compare this code to confirm no one is intercepting your keys.">🔒 Verify safety code</div>' +
+      '</div>' +
+      '<div class="messages scrollthin" id="messagesList"></div>' +
+      '<div class="composer">' +
+        '<textarea id="composerInput" rows="1" placeholder="Type a message…"></textarea>' +
+        '<button class="send-btn" id="sendBtn" title="Send">➤</button>' +
+      '</div>';
+
+    document.getElementById('verifyBadge').addEventListener('click', ()=> openVerifyModal(otherUsername, mutualFp));
+
+    const textarea = document.getElementById('composerInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const doSend = ()=>{
+      const text = textarea.value;
+      if (!text.trim()) return;
+      textarea.value=''; textarea.style.height='auto';
+      sendMessage(otherUsername, text);
+    };
+    textarea.addEventListener('input', ()=>{ textarea.style.height='auto'; textarea.style.height = Math.min(textarea.scrollHeight,140)+'px'; });
+    textarea.addEventListener('keydown', e=>{ if (e.key==='Enter' && !e.shiftKey){ e.preventDefault(); doSend(); } });
+    sendBtn.addEventListener('click', doSend);
+    textarea.focus();
+
+    await renderMessagesFor(otherUsername);
+  }
+
+  async function renderMessagesFor(otherUsername){
+    if (otherUsername !== activeConversation) return;
+    const holder = document.getElementById('messagesList');
+    if (!holder) return;
+    const sharedKey = await getSharedKey(otherUsername);
+    if (!sharedKey){ holder.innerHTML = '<div class="quiet-line" style="padding:20px;">Could not find a key for @' + esc(otherUsername) + '.</div>'; return; }
+    const convo = getConversation(convId(currentUser.username, otherUsername));
+    const messages = convo ? (convo.messages || []) : [];
+    const rows = [];
+    for (const m of messages){
+      let text;
+      try { text = await decryptText(sharedKey, m.iv, m.ct); } catch(e){ text = '⚠️ Could not decrypt this message.'; }
+      const sent = m.from === currentUser.username;
+      const time = new Date(m.ts).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+      rows.push('<div class="msg-row ' + (sent?'sent':'received') + '"><div><div class="bubble">' + esc(text) + '</div><div class="msg-time">' + time + '</div></div></div>');
+    }
+    holder.innerHTML = rows.join('') || '<div class="quiet-line" style="padding:20px;">No messages yet. Say hello — it\'ll be sealed before it leaves your device.</div>';
+    holder.scrollTop = holder.scrollHeight;
+  }
+
+  async function sendMessage(otherUsername, text){
+    const sharedKey = await getSharedKey(otherUsername);
+    if (!sharedKey){ toast('Could not find a key for that user.'); return; }
+    const { iv, ct } = await encryptText(sharedKey, text.trim());
+    const id = convId(currentUser.username, otherUsername);
+    const existing = getConversation(id) || { participants: [currentUser.username, otherUsername], messages: [] };
+    const messages = (existing.messages || []).slice(-299);
+    messages.push({ id: 'm-'+Date.now()+'-'+Math.random().toString(36).slice(2,8), from: currentUser.username, iv, ct, ts: Date.now() });
+    setConversation(id, { participants: existing.participants, messages, updatedAt: Date.now() });
+    renderMessagesFor(otherUsername);
+  }
+
+  /* ============================= live cross-tab sync ============================= */
+  window.addEventListener('storage', (e)=>{
+    if (!currentUser) return;
+    if (e.key === KEY_CONVOS && activeConversation){
+      renderMessagesFor(activeConversation);
+    }
+    if (e.key === KEY_USERS){
+      publicKeyCache.clear();
+    }
+  });
+
+  /* ============================= modals ============================= */
+  function openModal(html){
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.innerHTML = '<div class="modal">' + html + '</div>';
+    backdrop.addEventListener('click', e=>{ if (e.target===backdrop) backdrop.remove(); });
+    document.body.appendChild(backdrop);
+    return backdrop;
+  }
+  function openVerifyModal(otherUsername, mutualFp){
+    openModal(
+      '<h3>Safety code with @' + esc(otherUsername) + '</h3>' +
+      '<p>This code is derived from both of your public keys. If you compare it out loud or on another channel and it matches on both sides, you can be confident no one is sitting between your conversation.</p>' +
+      '<div class="fp-block mono">' + esc(mutualFp) + '</div>' +
+      '<div class="modal-actions"><button class="btn btn-primary" onclick="this.closest(\'.modal-backdrop\').remove()">Done</button></div>'
+    );
+  }
+  function openAccountModal(){
+    const backup = JSON.stringify({ username: currentUser.username, privateKey: currentUser.privateKey });
+    const modal = openModal(
+      '<h3>@' + esc(currentUser.username) + '</h3>' +
+      '<p>Your key fingerprint — a short hash of your public key, useful if someone wants to verify it independently.</p>' +
+      '<div class="fp-block mono" id="modalFp">…</div>' +
+      '<p>Your backup key restores this exact profile. Anyone who has it can read your messages, so keep it as carefully as a password.</p>' +
+      '<textarea class="field-input" readonly style="min-height:90px;">' + esc(backup) + '</textarea>' +
+      '<div class="modal-actions">' +
+        '<button class="btn btn-ghost" id="signOutBtn">Sign out of this tab</button>' +
+        '<button class="btn btn-primary" onclick="this.closest(\'.modal-backdrop\').remove()">Close</button>' +
+      '</div>'
+    );
+    fingerprintOf(currentUser.publicKey).then(fp=>{ const el = modal.querySelector('#modalFp'); if (el) el.textContent = fp; });
+    modal.querySelector('#signOutBtn').addEventListener('click', ()=>{
+      if (!confirm('Sign out of @' + currentUser.username + ' on this tab? You will need your backup key to sign back in.')) return;
+      clearIdentity();
+      location.reload();
+    });
+  }
+
+  /* ============================= boot ============================= */
+  function boot(){
+    if (!storageAvailable()){
+      app.innerHTML = '<div class="center-fill" style="flex-direction:column; gap:10px; text-align:center; padding:24px;">' +
+        '<div class="big">Storage is blocked in this browser</div>' +
+        '<div class="quiet-line" style="max-width:40ch;">Letter needs local storage to keep your keys and messages. Try leaving private/incognito mode, or allow site data for this page.</div>' +
+      '</div>';
+      return;
+    }
+    const saved = loadIdentity();
+    if (saved && saved.username && saved.privateKey){
+      currentUser = saved;
+      renderShell();
+    } else {
+      renderAuth();
+    }
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
